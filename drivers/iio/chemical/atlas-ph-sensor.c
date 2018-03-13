@@ -213,13 +213,14 @@ static int atlas_check_ec_calibration(struct atlas_data *data)
 	struct device *dev = &data->client->dev;
 	int ret;
 	unsigned int val;
+	__be16	rval;
 
-	ret = regmap_bulk_read(data->regmap, ATLAS_REG_EC_PROBE, &val, 2);
+	ret = regmap_bulk_read(data->regmap, ATLAS_REG_EC_PROBE, &rval, 2);
 	if (ret)
 		return ret;
 
-	dev_info(dev, "probe set to K = %d.%.2d", be16_to_cpu(val) / 100,
-						 be16_to_cpu(val) % 100);
+	val = be16_to_cpu(rval);
+	dev_info(dev, "probe set to K = %d.%.2d", val / 100, val % 100);
 
 	ret = regmap_read(data->regmap, ATLAS_REG_EC_CALIB_STATUS, &val);
 	if (ret)
@@ -343,7 +344,6 @@ static int atlas_buffer_predisable(struct iio_dev *indio_dev)
 }
 
 static const struct iio_trigger_ops atlas_interrupt_trigger_ops = {
-	.owner = THIS_MODULE,
 };
 
 static const struct iio_buffer_setup_ops atlas_buffer_setup_ops = {
@@ -498,7 +498,6 @@ static int atlas_write_raw(struct iio_dev *indio_dev,
 }
 
 static const struct iio_info atlas_info = {
-	.driver_module = THIS_MODULE,
 	.read_raw = atlas_read_raw,
 	.write_raw = atlas_write_raw,
 };

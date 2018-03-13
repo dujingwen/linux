@@ -36,6 +36,7 @@ struct hci_request {
 };
 
 void hci_req_init(struct hci_request *req, struct hci_dev *hdev);
+void hci_req_purge(struct hci_request *req);
 int hci_req_run(struct hci_request *req, hci_req_complete_t complete);
 int hci_req_run_skb(struct hci_request *req, hci_req_complete_skb_t complete);
 void hci_req_add(struct hci_request *req, u16 opcode, u32 plen,
@@ -105,6 +106,8 @@ static inline void hci_update_background_scan(struct hci_dev *hdev)
 
 void hci_request_setup(struct hci_dev *hdev);
 void hci_request_cancel_all(struct hci_dev *hdev);
+
+u8 append_local_name(struct hci_dev *hdev, u8 *ptr, u8 ad_len);
 
 static inline u16 eir_append_data(u8 *eir, u16 eir_len, u8 type,
 				  u8 *data, u8 data_len)

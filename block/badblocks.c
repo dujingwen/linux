@@ -133,6 +133,26 @@ retry:
 }
 EXPORT_SYMBOL_GPL(badblocks_check);
 
+static void badblocks_update_acked(struct badblocks *bb)
+{
+	u64 *p = bb->page;
+	int i;
+	bool unacked = false;
+
+	if (!bb->unacked_exist)
+		return;
+
+	for (i = 0; i < bb->count ; i++) {
+		if (!BB_ACK(p[i])) {
+			unacked = true;
+			break;
+		}
+	}
+
+	if (!unacked)
+		bb->unacked_exist = 0;
+}
+
 /**
  * badblocks_set() - Add a range of bad blocks to the table.
  * @bb:		the badblocks structure that holds all badblock information
@@ -158,7 +178,7 @@ int badblocks_set(struct badblocks *bb, sector_t s, int sectors,
 
 	if (bb->shift < 0)
 		/* badblocks are disabled */
-		return 0;
+		return 1;
 
 	if (bb->shift) {
 		/* round the start down, and the end up */
@@ -294,6 +314,8 @@ int badblocks_set(struct badblocks *bb, sector_t s, int sectors,
 	bb->changed = 1;
 	if (!acknowledged)
 		bb->unacked_exist = 1;
+	else
+		badblocks_update_acked(bb);
 	write_sequnlock_irqrestore(&bb->lock, flags);
 
 	return rv;
@@ -401,6 +423,7 @@ int badblocks_clear(struct badblocks *bb, sector_t s, int sectors)
 		}
 	}
 
+	badblocks_update_acked(bb);
 	bb->changed = 1;
 out:
 	write_sequnlock_irq(&bb->lock);
@@ -510,6 +533,7 @@ ssize_t badblocks_store(struct badblocks *bb, const char *page, size_t len,
 	case 3:
 		if (newline != '\n')
 			return -EINVAL;
+		/* fall through */
 	case 2:
 		if (length <= 0)
 			return -EINVAL;
